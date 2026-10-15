@@ -1,0 +1,19 @@
+name: Verify OrderDesk
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run dashboard regression tests
+        run: node --test tests/web.test.cjs
+      - name: Run service integration tests
+        run: docker compose -p orderdesk-tests -f compose.test.yaml run --build --rm tests
+      - name: Stop test services
+        if: always()
+        run: docker compose -p orderdesk-tests -f compose.test.yaml down

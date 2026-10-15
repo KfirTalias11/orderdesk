@@ -12,11 +12,15 @@ def request(path, data=None):
                          headers={'Content-Type': 'application/json'}), timeout=15) as response:
         return json.load(response)
 
+stage = 'readiness'
 try:
     assert request('/health/ready')['status'] == 'ready'
+    stage = 'catalog'
     product = request('/products')[0]
+    stage = 'order creation'
     order = request('/orders', {'customer_name': 'Workspace verification', 'product_id': product['id'], 'quantity': 2})
     assert order['total_cents'] == product['price_cents'] * 2
+    stage = 'fulfillment'
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         current = next(item for item in request('/orders') if item['id'] == order['id'])
@@ -27,5 +31,5 @@ try:
     else:
         raise RuntimeError('Order did not reach fulfilled within 30 seconds')
 except Exception as exc:
-    print(f'FAIL: {type(exc).__name__}: verification did not complete. Check service logs.', file=sys.stderr)
+    print(f'FAIL: {stage}: {type(exc).__name__}: verification did not complete. Check service logs.', file=sys.stderr)
     raise SystemExit(1)

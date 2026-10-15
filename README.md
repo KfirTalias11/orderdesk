@@ -31,6 +31,8 @@ The application services run as separate processes and containers and can be reb
 
 ```sh
 python3 scripts/smoke.py
+# Dashboard regression checks (Node.js 22+)
+node --test tests/web.test.cjs
 # Isolated, disposable test dependencies; no production data is touched.
 docker compose -p orderdesk-tests -f compose.test.yaml run --build --rm tests
 docker compose -p orderdesk-tests -f compose.test.yaml down

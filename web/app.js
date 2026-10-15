@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const money = cents => new Intl.NumberFormat('en-US', {style:'currency',currency:'USD'}).format(cents/100);
-let products = [], orders = [], busy = false;
+let products = [], orders = [], busy = false, submitting = false;
 async function api(path, options={}) {
   const response = await fetch('/api'+path, {...options, signal:AbortSignal.timeout(15000)});
   if (!response.ok) throw new Error(response.status >= 500 ? 'A service is unavailable. Check service status and try again.' : 'Please check the order details and try again.');
@@ -34,15 +34,15 @@ async function refresh(){
     renderOrders();estimate();services(status);
     $('total').textContent=status.summary.orders;$('pending').textContent=status.summary.pending;$('revenue').textContent=money(status.summary.revenue_cents);
     $('sync-text').textContent=`Updated ${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`;
-    $('error').hidden=true;$('submit').disabled=false;
+    $('error').hidden=true;$('submit').disabled=submitting;
   }catch(error){$('error').textContent=`Unable to refresh. ${error.message} Displayed orders may be out of date.`;$('error').hidden=false;$('sync-text').textContent='Connection interrupted';$('services').replaceChildren(node('li','Service status unavailable'));}
   finally{busy=false;$('refresh').disabled=false;}
 }
 $('order-form').addEventListener('submit',async event=>{
-  event.preventDefault();$('submit').disabled=true;$('form-message').textContent='Creating order…';
+  event.preventDefault();if(submitting)return;submitting=true;$('submit').disabled=true;$('form-message').textContent='Creating order…';
   try{const order=await api('/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer_name:$('customer').value,product_id:Number($('product').value),quantity:Number($('quantity').value)})});$('form-message').textContent=`Order #OD-${String(order.id).padStart(4,'0')} created. Fulfillment is on its way.`;$('customer').value='';await refresh();}
   catch(error){$('form-message').textContent=error.name==='TimeoutError'?'The request timed out. Refresh the ledger before retrying to avoid a duplicate order.':error.message;}
-  finally{$('submit').disabled=false;}
+  finally{submitting=false;$('submit').disabled=products.length===0;}
 });
 $('filter').addEventListener('change',renderOrders);$('product').addEventListener('change',estimate);$('quantity').addEventListener('input',estimate);$('refresh').addEventListener('click',refresh);
 refresh();setInterval(refresh,5000);

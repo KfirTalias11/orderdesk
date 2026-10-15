@@ -42,6 +42,7 @@ On a connected machine of the same CPU architecture, build and export images:
 
 ```sh
 docker compose build
+docker compose pull db redis
 docker image save orderdesk-app:local orderdesk-web:local postgres:16-alpine redis:7-alpine -o orderdesk-images.tar
 ```
 
