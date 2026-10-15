@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>OrderDesk — Orders</title><link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script></head>
+<body>
+<header class="topbar"><a href="/" class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h22v18H5zM10 8V4h12v4M11 15h10M11 20h6"/></svg>OrderDesk<span class="brand-dot">.</span></a><span class="workspace">Workspace / <strong>Orders</strong></span><span class="avatar" aria-label="Local workspace">OD</span></header>
+<main>
+<div class="page-heading"><div><h1>Keep orders moving.</h1><p>Your catalog, customer orders, and fulfillment in one place.</p></div><span class="environment">Local workspace</span></div>
+<div id="error" class="notice" role="alert" hidden></div>
+<div class="summary" aria-label="Order summary"><div><span>Total orders</span><strong id="total">—</strong></div><div><span>Awaiting fulfillment</span><strong id="pending">—</strong></div><div><span>Order value</span><strong id="revenue">—</strong></div><div class="sync"><span id="sync-text">Connecting to your workspace…</span><button id="refresh" class="text-button">Refresh data</button></div></div>
+<div class="workspace-grid">
+<section class="ledger"><div class="section-heading"><div><h2>Order ledger</h2><p>From first request to fulfilled.</p></div><label class="filter-label">Show<select id="filter"><option value="all">All orders</option><option value="pending">Pending</option><option value="fulfilled">Fulfilled</option></select></label></div><div class="table-wrap"><table><thead><tr><th>Order / Customer</th><th>Product</th><th>Amount</th><th>Status</th></tr></thead><tbody id="orders"><tr><td colspan="4" class="empty">Loading your orders…</td></tr></tbody></table></div><p class="table-note">Showing the latest 200 orders. Totals include all orders.</p></section>
+<aside><section class="create-panel"><h2>New order</h2><p>A good day starts with a new order.</p><form id="order-form"><label for="customer">Customer name</label><input id="customer" name="customer_name" placeholder="e.g. Juniper Studio" required maxlength="120" autocomplete="organization"><label for="product">Product</label><select id="product" required><option value="">Loading catalog…</option></select><label for="quantity">Quantity</label><input id="quantity" type="number" min="1" max="1000" step="1" value="1" required><div class="order-total"><span>Order total</span><strong id="estimate">—</strong></div><button id="submit" class="primary" disabled>Create order <span aria-hidden="true">↗</span></button><p id="form-message" role="status" aria-live="polite"></p></form></section><section class="service-panel"><h2>Behind the scenes</h2><ul id="services"><li>Checking service availability…</li></ul><p>Orders are fulfilled automatically by the fulfillment service.</p></section></aside>
+</div>
+<footer><span>OrderDesk · Thoughtfully organized.</span><span>Sample catalog · USD</span></footer>
+</main>
+</body></html>
