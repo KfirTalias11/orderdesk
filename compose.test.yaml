@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orderdesk
+      POSTGRES_PASSWORD: test-only-password
+      POSTGRES_DB: orderdesk_test
+    tmpfs: /var/lib/postgresql/data
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U orderdesk -d orderdesk_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  tests:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://orderdesk:test-only-password@db:5432/orderdesk_test
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    command: [python, -m, pytest, -q, -p, no:cacheprovider]

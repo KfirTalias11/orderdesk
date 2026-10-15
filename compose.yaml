@@ -1,0 +1,81 @@
+name: orderdesk
+x-app: &app
+  image: orderdesk-app:local
+  build: .
+  restart: unless-stopped
+  environment: &env
+    DATABASE_URL: postgresql://orderdesk:${POSTGRES_PASSWORD:?Run python3 scripts/setup.py first}@db:5432/orderdesk
+    REDIS_URL: redis://redis:6379/0
+    QUEUE_NAME: orders:fulfillment
+  depends_on:
+    db: {condition: service_healthy}
+    redis: {condition: service_healthy}
+  logging: &logs
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+services:
+  web:
+    image: orderdesk-web:local
+    build: ./web
+    restart: unless-stopped
+    ports: ['127.0.0.1:${WEB_PORT:-8088}:80']
+    depends_on:
+      api: {condition: service_started}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/health]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging: *logs
+  api:
+    <<: *app
+    environment:
+      <<: *env
+      SERVICE_NAME: orders-api
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/ready',timeout=8)"]
+      interval: 10s
+      timeout: 9s
+      retries: 3
+  worker:
+    <<: *app
+    command: [python, -m, app.worker]
+    environment:
+      <<: *env
+      SERVICE_NAME: fulfillment
+      WORKER_POLL_SECONDS: '2'
+    healthcheck:
+      test: [CMD, python, -c, "from app.db import connection; c=connection(); r=c.execute(\"SELECT heartbeat_at > now()-interval '15 seconds' AS fresh FROM worker_status WHERE name='fulfillment'\").fetchone(); c.close(); raise SystemExit(0 if r and r['fresh'] else 1)"]
+      interval: 10s
+      timeout: 8s
+      retries: 3
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orderdesk
+      POSTGRES_USER: orderdesk
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup.py first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U orderdesk -d orderdesk']
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    logging: *logs
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    logging: *logs
+volumes:
+  postgres-data:
+  redis-data:
